@@ -299,20 +299,35 @@ def load_custom_adapters(custom_adapters):
     Note that currently only pairs of adapters (start, end) are supported.
     '''
     from .adapters import Adapter
-    import csv
+    #import csv
+    import pandas as pd
 
-    with open(custom_adapters, 'r') as fp:
-        f = csv.reader(fp, delimiter=',')
+    # with open(custom_adapters, 'r') as fp:
+    #     f = csv.reader(fp, delimiter=',')
 
-        while True:
-            name, start, sequence_start = next(f)
-            _, end, sequence_end = next(f)    
+    #     while True:
+    #         name, start, sequence_start = next(f)
+    #         _, end, sequence_end = next(f)    
 
-            yield Adapter(
+    #         print(name, start, end)
+
+    #         yield Adapter(
+    #             name=name,
+    #             start_sequence=(start, sequence_start),
+    #             end_sequence=(end, sequence_end))
+
+    adapter_df = pd.read_csv(custom_adapters, names = ['group', 'startend', 'sequence'])
+    for name, group in adapter_df.groupby(by = 'group'):
+        start = group.loc[group['startend'].str.contains('forward'), 'startend'].values[0]
+        end = group.loc[group['startend'].str.contains('reverse'), 'startend'].values[0]
+        sequence_start = group.loc[group['startend'].str.contains('forward'), 'sequence'].values[0]
+        sequence_end = group.loc[group['startend'].str.contains('reverse'), 'sequence'].values[0]
+
+        print(f'Adding adapter {name}, ({start}, {end})')
+        yield Adapter(
                 name=name,
                 start_sequence=(start, sequence_start),
                 end_sequence=(end, sequence_end))
-
 
 def find_matching_adapter_sets(check_reads, verbosity, end_size, scoring_scheme_vals, print_dest,
                                adapter_threshold, threads, custom_adapters):
